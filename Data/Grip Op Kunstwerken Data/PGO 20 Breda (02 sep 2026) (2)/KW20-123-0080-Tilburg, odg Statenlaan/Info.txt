@@ -1,0 +1,5 @@
+0 - Ontvangen documenten
+1 - Uit archief onderzoek
+2 - Kunstwerkpaspoort
+3 - Resultaten Opname
+4 - Controle & Vrijgave KWPP
