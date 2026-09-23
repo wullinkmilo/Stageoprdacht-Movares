@@ -1,9 +1,9 @@
 # Simplified version of model
 import time
-import math
 import gurobipy as gp
 from gurobipy import Model, GRB, quicksum
-import matplotlib.pyplot as plt
+import math
+from matplotlib import pyplot as plt
 
 class Asset:
     def __init__(self, name, actions, construction_year):
@@ -104,22 +104,6 @@ def run_model(bridges, y_0, T):
                     name=f"{bridge.name}_{action.name}_y_of_last_action_{year}",
                 )
 
-    # Binary selectors linearize the lookup of the Weibull CDF.  The last
-    # action year can only be the input year or one of the planning years.
-    last_action_selectors = {}
-    possible_last_action_years = sorted(
-        {action.y_of_last_action_input for bridge in bridges for action in bridge.actions}
-        | set(range(y_0, y_0 + T))
-    )
-    for bridge in bridges:
-        for action in bridge.actions:
-            for year in range(y_0, y_0 + T):
-                for last_year in possible_last_action_years:
-                    last_action_selectors[bridge.name, action.name, year, last_year] = m.addVar(
-                        vtype=GRB.BINARY,
-                        name=f"{bridge.name}_{action.name}_{year}_last_{last_year}",
-                    )
-
     m.update()
 
     # Constraints: If an action is performed, the y_of_last_action should be updated to y_0 + t.
@@ -144,22 +128,6 @@ def run_model(bridges, y_0, T):
                         (x == 0) >> (set_var == previous_last)
                     )
 
-    # Select exactly one possible last-action year.  This makes the penalty
-    # lookup linear rather than using exp() in the objective.
-    for bridge in bridges:
-        for action in bridge.actions:
-            for year in range(y_0, y_0 + T):
-                selectors = [
-                    last_action_selectors[bridge.name, action.name, year, last_year]
-                    for last_year in possible_last_action_years
-                ]
-                m.addConstr(quicksum(selectors) == 1)
-                m.addConstr(
-                    y_of_last_action[bridge.name, action.name, year]
-                    == quicksum(last_year * selector
-                                for last_year, selector in zip(possible_last_action_years, selectors))
-                )
-
     m.addConstr(bridge_action_year["Bridge 1", "Action 1", 2030] == 1)
 
 
@@ -176,19 +144,25 @@ def run_model(bridges, y_0, T):
         for year in range(y_0, y_0 + T)
     )
 
-    # Penalty costs. The CDF values are constants selected by binary
-    # variables, so the objective is linear.
+    # Penalty costs. The last-action year is a decision variable, so the
+    # Weibull CDF makes the objective nonlinear.
     penalty_costs = quicksum(
-        action.penalty * max(0, 1 - math.exp(
-            -((max(0, year - last_year)) / action.theta) ** action.beta
-        )) * last_action_selectors[bridge.name, action.name, year, last_year]
+        action.penalty
+        * (1 - bridge_action_year[bridge.name, action.name, year])
+        * CDF_reliability(
+            bridge,
+            action,
+            y_of_last_action[bridge.name, action.name, year] - year,
+        )
         for bridge in bridges
         for action in bridge.actions
         for year in range(y_0, y_0 + T)
-        for last_year in possible_last_action_years
     )
 
     m.setObjective(action_costs + penalty_costs, GRB.MINIMIZE)
+
+    # Enable nonconvex quadratic/nonlinear mixed-integer optimization.
+    m.Params.NonConvex = 2
 
     m.update()
 
@@ -216,7 +190,6 @@ def run_model(bridges, y_0, T):
                         print(f"Year of last action for {action.name} on {bridge.name} in year {year}: {y_of_last_action[bridge.name, action.name, year].x}")
 
     return results
-
 
 def visualize_results(results):
     # Make a plot of results. x-axis: years, y-axis: actions per bridge.
@@ -265,8 +238,11 @@ def visualize_results(results):
     
     plt.show()
 
-
 if __name__ == "__main__":
-    bridges = structure_data(import_data())
-    results = run_model(bridges, y_0=2026, T=150)
+    bridges = import_data()
+    bridges = structure_data(bridges)
+
+    y_0 = 2026
+    T = 10  # Example time horizon
+    results = run_model(bridges, y_0, T)
     visualize_results(results)

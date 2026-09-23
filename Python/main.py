@@ -2,7 +2,7 @@ import pandas as pd
 import openpyxl
 from openpyxl.styles import Color
 import os
-
+import pprint
 
 def importKW(file_path):
     """
@@ -116,7 +116,6 @@ def importKW(file_path):
     NA_cd_railings = df.iloc[51, 12]
     NA_cd_foundation = df.iloc[52, 12]
 
-
     asset = Asset(
         # Properties of the asset
         sap_number=SAP_number,
@@ -136,7 +135,6 @@ def importKW(file_path):
         width=width,
         height=height,
         thickness=thickness,
-
         # Conditions of certain aspects of the asset
         risk_assessment_date = risk_assessment_date,
         cd_age = colorM41,
@@ -151,7 +149,6 @@ def importKW(file_path):
         cd_workingconditions = colorM50,
         cd_railings = colorM52,
         cd_foundation = colorM53,
-
         # N/A values for certain aspects of the asset
         NA_cd_age = NA_cd_age,
         NA_cd_constructive = NA_cd_constructive,
@@ -168,6 +165,115 @@ def importKW(file_path):
     )
 
     return unique_colors, asset
+
+def importLCC(file_path):
+    """
+    Import data from an LCC Excel file and return a dictionary of DataFrames for each sheet.
+    """
+    try:
+        df_voorblad = pd.read_excel(file_path, sheet_name="Voorblad")
+        df_berekening = pd.read_excel(file_path, sheet_name="Berekening MJOP+LTP")
+        
+    except Exception as e:
+        print(f"Error importing {file_path}: {e}")
+        return None
+
+    # Rename the columns to match the index of column
+    df_voorblad.columns = range(len(df_voorblad.columns))
+    df_berekening.columns = range(len(df_berekening.columns))
+
+    # Show all rows
+    pd.set_option('display.max_rows', None)
+    pd.set_option('display.max_columns', None)
+
+    asset_number = df_voorblad.iloc[17, 5]
+
+    actions = []
+    # Extract list of possible actions
+    for row in range(56, 227):
+        amount = df_berekening.iloc[row, 16]
+        if amount != 0 and not pd.isna(amount):
+            cost_category = df_berekening.iloc[row, 1]
+            theme = df_berekening.iloc[row, 5]
+            abreviation = df_berekening.iloc[row, 8]
+            name = df_berekening.iloc[row, 10]
+            method_of_calculation = df_berekening.iloc[row, 14]
+            extra_info = df_berekening.iloc[row, 15]
+            unit = df_berekening.iloc[row, 17]
+            unit_price = df_berekening.iloc[row, 18]
+            frequency = df_berekening.iloc[row, 20]
+
+            action = {
+                "cost_category": cost_category,
+                "theme": theme,
+                "abreviation": abreviation,
+                "name": name,
+                "method_of_calculation": method_of_calculation,
+                "extra_info": extra_info,
+                "amount": amount,
+                "unit": unit,
+                "unit_price": unit_price,
+                "frequency": frequency
+            }
+            
+            actions.append(action)
+
+    return actions, asset_number
+
+def importLCCs(folder_path):
+    """
+    Import data from multiple LCC Excel files in a folder and return a list of actions for each asset.
+    """
+    assets = []
+    actions_all = {}
+    i = 0
+    for root, _, files in os.walk(folder_path):
+        for file in files:
+            if file.endswith("LCC.xlsx") and not file.endswith("KW20-551-0090_LCC.xlsx") and not file.endswith("KW20-544-0050_LCC.xlsx"):
+                file_path = os.path.join(root, file)
+                print(f"Importing {file_path}")
+                i += 1
+                actions, asset_number = importLCC(file_path)
+                assets.append(asset_number)
+                actions_all[asset_number] = actions
+
+    print(f"Assets considered: {i}")
+    return actions_all, assets
+
+def count_NAs(assets):
+    """
+    Count the number of "N.v.t." values in the assets' risk assessment column.
+    """
+    count = 0
+    for asset in assets.values():
+        if asset.NA_cd_age == "N.v.t.":
+            count += 1
+        if asset.NA_cd_constructive == "N.v.t.":
+            count += 1
+        if asset.NA_cd_damage == "N.v.t.":
+            count += 1
+        if asset.NA_cd_leakage == "N.v.t.":
+            count += 1
+        if asset.NA_cd_watermanagement == "N.v.t.":
+            count += 1
+        if asset.NA_cd_deckmounting == "N.v.t.":
+            count += 1
+        if asset.NA_cd_joints == "N.v.t.":
+            count += 1
+        if asset.NA_cd_abutment == "N.v.t.":
+            count += 1
+        if asset.NA_cd_collisiondanger == "N.v.t.":
+            count += 1
+        if asset.NA_cd_workingconditions == "N.v.t.":
+            count += 1
+        if asset.NA_cd_railings == "N.v.t.":
+            count += 1
+        if asset.NA_cd_foundation == "N.v.t.":
+            count += 1
+
+    print(f"Total number of N.v.t. values in the assets: {count}")
+
+    return count
 
 def importKWs(folder_path):
     """
@@ -294,33 +400,15 @@ if __name__ == "__main__":
     )
 
     unique_colors, assets = importKWs(folder_path)
-    print(f"All unique colors in the folder: {unique_colors}")
-    print(f"Total number of assets imported: {len(assets)}")
+    # print(f"All unique colors in the folder: {unique_colors}")
+    # print(f"Total number of assets imported: {len(assets)}")
+    assetsKWs = list(assets.keys())
 
-    count = 0
-    for asset in assets.values():
-        if asset.NA_cd_age == "N.v.t.":
-            count += 1
-        if asset.NA_cd_constructive == "N.v.t.":
-            count += 1
-        if asset.NA_cd_damage == "N.v.t.":
-            count += 1
-        if asset.NA_cd_leakage == "N.v.t.":
-            count += 1
-        if asset.NA_cd_watermanagement == "N.v.t.":
-            count += 1
-        if asset.NA_cd_deckmounting == "N.v.t.":
-            count += 1
-        if asset.NA_cd_joints == "N.v.t.":
-            count += 1
-        if asset.NA_cd_abutment == "N.v.t.":
-            count += 1
-        if asset.NA_cd_collisiondanger == "N.v.t.":
-            count += 1
-        if asset.NA_cd_workingconditions == "N.v.t.":
-            count += 1
-        if asset.NA_cd_railings == "N.v.t.":
-            count += 1
-        if asset.NA_cd_foundation == "N.v.t.":
-            count += 1
-    print(f"Total number of N.v.t. values in the assets: {count}")
+    lcc_data, assetsLCCs = importLCCs(folder_path)
+
+    pprint.pprint(assetsKWs)
+    pprint.pprint(assetsLCCs)
+
+    # Find non-matching assets between the two lists
+    non_matching_assets = set(assetsLCCs) - set(assetsKWs)
+    print(f"Non-matching assets between KW and LCC: {non_matching_assets}")
