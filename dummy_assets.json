@@ -1,0 +1,81 @@
+[
+    {
+        "name": "Bridge 1",
+        "ID": "B1",
+        "construction_year_superstructure": 2000,
+        "construction_year_substructure": 2005,
+        "measures": [
+            {
+                "name": "Measure 1",
+                "ID": 1,
+                "amount": 100,
+                "unit_price": 885,
+                "construction_year": 2000
+            },
+            {
+                "name": "Measure 2",
+                "ID": 2,
+                "amount": 50,
+                "unit_price": 1600,
+                "construction_year": 2000
+            },
+            {
+                "name": "Measure 3",
+                "ID": 3,
+                "amount": 50,
+                "unit_price": 12000,
+                "construction_year": 2000
+            }
+        ],
+        "madasters": [
+            {
+                "name": "Madaster 1",
+                "ID": "MD1",
+                "amount": 100,
+                "unit_price": 885
+            },
+            {
+                "name": "Madaster 2",
+                "ID": "MD2",
+                "amount": 50,
+                "unit_price": 1600
+            }
+        ]
+    },
+    {
+        "name": "Bridge 2",
+        "ID": "B2",
+        "construction_year_superstructure": 2025,
+        "construction_year_substructure": 2025,
+        "measures": [
+            {
+                "name": "Measure 1",
+                "ID": 1,
+                "amount": 25,
+                "unit_price": 885,
+                "construction_year": 2025
+            },
+            {
+                "name": "Measure 2",
+                "ID": 2,
+                "amount": 25,
+                "unit_price": 1600,
+                "construction_year": 2025
+            }
+        ],
+        "madasters": [
+            {
+                "name": "Madaster 1",
+                "ID": "MD1",
+                "amount": 25,
+                "unit_price": 885
+            },
+            {
+                "name": "Madaster 2",
+                "ID": "MD2",
+                "amount": 25,
+                "unit_price": 1600
+            }
+        ]
+    }
+]
