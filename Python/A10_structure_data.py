@@ -78,11 +78,12 @@ class Asset:
         return str(self.ID)
 
 class Measure:
-    def __init__(self, ID, name, amount, unit_price, structure_type = None, construction_year = None, cost_category = None, theme = None, abreviation = None, method_of_calculation = None, extra_info = None, unit = None, frequency = None):
+    def __init__(self, ID, name, amount, unit_price, dependencies = None, structure_type = None, construction_year = None, cost_category = None, theme = None, abreviation = None, method_of_calculation = None, extra_info = None, unit = None, frequency = None):
         self.ID = ID
         self.name = name
         self.amount = amount
         self.unit_price = unit_price
+        self.dependencies = dependencies if dependencies is not None else [ID]
         self.structure_type = structure_type
         self.year_of_last_measure_input = construction_year # MUST STILL BE ADJUSTED
         self.costs = amount * unit_price
@@ -140,22 +141,28 @@ def load_json(json_file_path):
         data = json.load(json_file)
     return data
 
-def structure_data(json_file_path):
+def structure_data(assets_json_file_path, dependencies_json_file_path):
 
-    data = load_json(json_file_path)
+    asset_json = load_json(assets_json_file_path)
+    dependencies = load_json(dependencies_json_file_path)
 
     # Create class instances for assets, measures, and madasters.
-    assets = []
+    assets = {}
 
-    for asset in data:
-                asset["measures"] = [
-                    Measure(**measure) for measure in asset["measures"]
-                ]
-                asset["madasters"] = [
-                    Madaster(**madaster) for madaster in asset["madasters"]
-                ]
-                asset = Asset(**asset)  # Create an Asset instance with the asset dictionary
-                assets.append(asset)
+    for asset in asset_json:
+        # Add dependencies to the measure dictionary
+        for measure in asset["measures"]:
+            measure["dependencies"] = dependencies[str(measure["ID"])]
+
+        # Add measures and madasters to the asset dictionary
+        asset["measures"] = [
+            Measure(**measure) for measure in asset["measures"]
+        ]
+        asset["madasters"] = [
+            Madaster(**madaster) for madaster in asset["madasters"]
+        ]
+        asset = Asset(**asset)  # Create an Asset instance with the asset dictionary
+        assets[asset.ID] = asset
     
     return assets
 
@@ -167,7 +174,7 @@ def check_standardization(assets):
     measure_name_numbers = {}
     madaster_name_numbers = {}
 
-    for asset in assets:
+    for asset in assets.values():
         for madaster in asset.madasters:
             if madaster.ID not in madaster_name_numbers:
                 madaster_name_numbers[madaster.ID] = set()
@@ -188,8 +195,9 @@ def check_standardization(assets):
 
 if __name__ == "__main__":
 
-    json_file_path = r"C:\\Users\\milowullink\\OneDrive - Movares\\Documenten\\Stageopdracht Movares\\assets.json"
+    assets_json_file_path = r"C:\\Users\\milowullink\\OneDrive - Movares\\Documenten\\Stageopdracht Movares\\assets.json"
+    dependencies_json_file_path = r"C:\\Users\\milowullink\\OneDrive - Movares\\Documenten\\Stageopdracht Movares\\dependencies.json"
 
-    assets = structure_data(json_file_path)
+    assets = structure_data(assets_json_file_path, dependencies_json_file_path)
 
     check_standardization(assets)

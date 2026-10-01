@@ -85,4 +85,4 @@ if __name__ == "__main__":
             ]
 
     # Save the assets to a JSON file
-    json.dump(assets, open("assets.json", "w"), indent=4, default=str)
+    json.dump(assets, open("dummy_assets.json", "w"), indent=4, default=str)

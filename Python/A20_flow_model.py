@@ -5,12 +5,12 @@ from gurobipy import Model, GRB, quicksum
 import matplotlib.pyplot as plt
 import pprint
 
-from A01_structure_data import structure_data
+from A10_structure_data import structure_data
 
 
 def set_year(assets, y_0):
     i = 0
-    for asset in assets:
+    for asset in assets.values():
         for measure in asset.measures:
             i += 1
             measure.set_y_0(y_0)
@@ -36,7 +36,7 @@ def run_model(assets, T):
     nodes = {}
     arcs = {}
 
-    for asset in assets:
+    for asset in assets.values():
         for measure in asset.measures:
             key = (asset, measure)
             # print(f"Creating variables for {key}")
@@ -114,7 +114,7 @@ def run_model(assets, T):
     print("Creating constraints...")
 
     # Source nodes have exactly one outgoing arc (either perform the measure or not).
-    for asset in assets:
+    for asset in assets.values():
         for measure in asset.measures:
             key = (asset, measure)
             source_node = (measure.tslm, measure.age)
@@ -124,7 +124,7 @@ def run_model(assets, T):
             )
 
     # Flow conservation constraints
-    for asset in assets:
+    for asset in assets.values():
         for measure in asset.measures:
             key = (asset, measure)
 
@@ -277,9 +277,11 @@ def plot_schedule(results):
 if __name__ == "__main__":
 
     print("Start running...")
-    json_file_path = r"C:\\Users\\milowullink\\OneDrive - Movares\\Documenten\\Stageopdracht Movares\\assets.json"
+    assets_json_file_path = r"C:\\Users\\milowullink\\OneDrive - Movares\\Documenten\\Stageopdracht Movares\\assets.json"
+    dependencies_json_file_path = r"C:\\Users\\milowullink\\OneDrive - Movares\\Documenten\\Stageopdracht Movares\\dependencies.json"
 
-    assets = structure_data(json_file_path)
+    assets = structure_data(assets_json_file_path, dependencies_json_file_path)
+
 
     y_0 = 2026
     T = 150
